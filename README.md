@@ -12,7 +12,7 @@ Please be patient with updates and fixes, as I don't even have time to launch my
 ### decode.ais.php
 
 To try, just do the following
-+ copy **decode.ais.php** file to webserver
++ copy all **php** files to webserver
 + call via web-browser and view the result
 + testing code is towards the end
 
