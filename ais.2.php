@@ -1,50 +1,13 @@
 <?php
-/*
-
-1. Decode the ITU Payload
-
-2. Encode to full AIS string
-
-3. Todo:
-a) decoder for 1,2,3,5,17,18,24A for now
-b) sample output message 24A
-
-Receives a broadcast message,
-Organises the binary bits of the Message Data into 6-bit strings,
-Converts the 6-bit strings into their representative "valid characters" – see IEC 61162-1, table 7,
-Assembles the valid characters into an encapsulation string, and
-Transfers the encapsulation string using the VDM sentence formatter.
-*/
-$ais = '15MgK45P3@G?fl0E`JbR0OwT0@MS';
-/*
-User ID	366730000	
-Navigation Status	5	Moored
-Rate of Turn (ROT)	-729	
-Speed Over Ground (SOG)	20.8	
-Position Accuracy	0	An unaugmented GNSS fix with accuracy > 10 m
-Longitude	-122.392531666667	West
-Latitude	37.8038033333333	North
-Course Over Ground (COG)	51.3	
-True Heading (HDG)	511	Not available (default)
+/* AIS Decoding
+- Receive and get ITU payload
+- Organises the binary bits of the Payload into 6-bit strings,
+- Converts the 6-bit strings into their representative "valid characters" – see IEC 61162-1, table 7,
+- Assembles the valid characters into an encapsulation string, and
+- Transfers the encapsulation string using the VDM sentence formatter.
 */
 
-$ais = '55?MbV02;H;s<HtKR20EHE:0@T4@Dn2222222216L961O5Gf0NSQEp6ClRp888888888880';
-/*
-AIVDM,2,1,1,A,55?MbV02;H;s<HtKR20EHE:0@T4@Dn2222222216L961O5Gf0NSQEp6ClRp8,0*1C
-AIVDM,2,2,1,A,88888888880,2*25
-User ID	351759000	
-AIS Version	0	Station compliant with AIS Edition 0
-IMO Number	9134270	
-Call Sign	3FOF8 	
-Name	EVER DIADEM 	
-*/
-
-$ais = 'H5?MbV05<T4r0`4@D0000000000';
-
-$aisdata168=NULL;//six bit array of ascii characters
-
-
-function make_latf($temp) {
+function make_latf($temp) { // unsigned long 
 	$flat; // float
 	$temp = $temp & 0x07FFFFFF;
 	if ($temp & 0x04000000) {
@@ -57,8 +20,7 @@ function make_latf($temp) {
 	return $flat; // float
 }
 
-// unsigned long
-function make_lonf($temp) {
+function make_lonf($temp) { // unsigned long
 	$flon; // float
 	$temp = $temp & 0x0FFFFFFF;
 	if ($temp & 0x08000000) {
@@ -71,13 +33,11 @@ function make_lonf($temp) {
 	return $flon;
 }
 
-
 function ascii_2_dec($chr) {
 	$dec=ord($chr);//get decimal ascii code
 	$hex=dechex($dec);//convert decimal to hex
 	return ($dec);
 }
-
 /*
 $ais_map64 = array(
    '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', // 48
@@ -97,7 +57,6 @@ function asciidec_2_8bit($ascii) {
 		else {
 			if ($ascii>87 && $ascii<96) ;
 			else {
-
 				$ascii=$ascii+40;
 				if ($ascii>128){$ascii=$ascii+32;}
 				else{$ascii=$ascii+40;}
@@ -112,7 +71,6 @@ function dec_2_6bit($dec) {
 	return(substr($bin, -6)); 
 }
 
-
 function binchar($_str, $_start, $_size) {
 	//  ' ' --- '?', // 0x20 - 0x3F
 	//  '@' --- '_', // 0x40 - 0x5F
@@ -125,7 +83,6 @@ function binchar($_str, $_start, $_size) {
 		'2', '3', '4', '5', '6', '7', '8', '9', ':', ';',
 		'<', '=', '>', '?'
 	);
-
 	$rv = '';
 	if ($_size % 6 == 0) {
 		$len = $_size / 6;
@@ -136,47 +93,206 @@ function binchar($_str, $_start, $_size) {
 	}
 	return $rv;
 }
- 
-$ais_nmea_array = str_split($ais); // convert to an array
-foreach ($ais_nmea_array as $value) {
-	$dec=ascii_2_dec($value);
-	$bit8=asciidec_2_8bit($dec);
-	$bit6=dec_2_6bit($bit8);
-	//echo $value ."-" .$bit6 ."";
-	$aisdata168 .=$bit6;
+
+// function for decoding the AIS Message ITU Payload
+function process_ais_itu($_itu, $_len, $_filler /*, $ais_ch*/) {
+	GLOBAL $port; // tcpip port...
+	static $debug_counter = 0;
+
+	$aisdata168='';//six bit array of ascii characters
+
+	$ais_nmea_array = str_split($_itu); // convert to an array
+	foreach ($ais_nmea_array as $value) {
+		$dec=ascii_2_dec($value);
+		$bit8=asciidec_2_8bit($dec);
+		$bit6=dec_2_6bit($bit8);
+		//echo $value ."-" .$bit6 ."";
+		$aisdata168 .=$bit6;
+	}
+	//echo $aisdata168 . "<br/>";
+
+	$id = bindec(substr($aisdata168,0,6));
+	$mmsi = bindec(substr($aisdata168,8,30));
+
+	$name = '';
+	$sog = -1.0;
+	$cog = 0.0;
+	$lon = 0.0;
+	$lat = 0.0;
+	$cls = 0; // AIS class undefined
+
+	if ($id >= 1 && $id <= 3) {
+		$cog = bindec(substr($aisdata168,116,12))/10;
+		$sog = bindec(substr($aisdata168,50,10))/10;
+		$lon = make_lonf(bindec(substr($aisdata168,61,28)));
+		$lat = make_latf(bindec(substr($aisdata168,89,27)));
+		$cls = 1; // class A
+	}
+	else if ($id == 5) {
+		$imo = bindec(substr($aisdata168,40,30));
+		$cs = binchar($aisdata168,70,42);
+		$name = binchar($aisdata168,112,120);
+		$cls = 1; // class A
+	}
+	else if ($id == 18) {
+		$cog = bindec(substr($aisdata168,112,12))/10;
+		$sog = bindec(substr($aisdata168,46,10))/10;
+		$lon = make_lonf(bindec(substr($aisdata168,57,28)));
+		$lat = make_latf(bindec(substr($aisdata168,85,27)));
+		$cls = 2; // class B
+	}
+	else if ($id == 19) {
+		$cog = bindec(substr($aisdata168,112,12))/10;
+		$sog = bindec(substr($aisdata168,46,10))/10;
+		$lon = make_lonf(bindec(substr($aisdata168,61,28)));
+		$lat = make_latf(bindec(substr($aisdata168,89,27)));
+		$name = binchar($aisdata168,143,120);
+		$cls = 2; // class B
+	}
+	else if ($id == 24) {
+		$pn = bindec(substr($aisdata168,38,2));
+		if ($pn == 0) {
+			$name = binchar($aisdata168,40,120);
+		}
+		$cls = 2; // class B
+	}
+	if ($mmsi > 0 && $mmsi<1000000000) {// valid mmsi only...
+		$utc = time();
+		echo "$mmsi, $name, $utc, $lon, $lat, $sog, $cog, $cls, $port<br>\n";
+	}
+	return $id;
 }
-//echo $aisdata168 . "<br/>";
 
-echo "id= " . bindec(substr($aisdata168,0,6)) . "<br/>";
-echo "mmsi= " . bindec(substr($aisdata168,8,30)) . "<br/>";
+// char* - AIS \r terminated string
+function process_ais_raw($rawdata) { // return int
+	static $num_seq; // 1 to 9
+	static $seq; // 1 to 9
+	static $pseq; // previous seq
 
-//echo "imo= " . bindec(substr($aisdata168,40,30)) . "<br/>";
-//echo "cs= " . binchar($aisdata168,70,42) . "<br/>";
-//echo "name= " . binchar($aisdata168,112,120) . "<br/>";
+	static $msg_sid = -1; // 0 to 9, indicate -1 at start state of device, do not process messages
+	static $cmsg_sid; // current msg_sid
+	static $itu; // buffer for ITU message
 
-//echo "cog= " . bindec(substr($aisdata168,116,12))/10 . "<br/>";
-//echo "sog= " . bindec(substr($aisdata168,50,10))/10 . "<br/>";
+	$filler = 0; // fill bits (int)
+	$chksum = 0;
 
-echo "name= " . binchar($aisdata168,40,120) . "<br/>";
+	// raw data without the \n
+
+	// calculate checksum after ! till *
+	// assume 1st ! is valid
+	
+	// find * ensure that it is at correct position
+	$end = strrpos ( $rawdata , '*' );
+	if ($end === FALSE) return -1; // check for NULLS!!!
+	
+	$cs = substr( $rawdata, $end + 1 );
+	if ( strlen($cs) != 2 ) return -1; // correct cs length
+	$dcs = (int)hexdec( $cs );
+	
+	for ( $alias=1; $alias<$end; $alias++) $chksum ^= ord( $rawdata[$alias] ); // perform XOR for NMEA checksum
+
+	if ( $chksum == $dcs ) { // NMEA checksum pass
+		$pcs = explode(',', $rawdata);
+		// !AI??? identifier
+		$num_seq = (int)$pcs[1]; // number of sequences
+		$seq = (int)$pcs[2]; // get sequence
+
+		// get msg sequence id
+		if ($pcs[3] == '') $msg_sid = -1; // non-multipart message, set to -1
+		else $msg_sid = (int)$pcs[3]; // multipart message
+		$ais_ch = $pcs[4]; // get AIS channel
+
+		// message sequence checking
+		if ($num_seq < 1 || $num_seq > 9) {
+			echo "ERROR,INVALID_NUMBER_OF_SEQUENCES ".time()." $rawdata\n";
+			return -1;
+		}
+		else if ($seq < 1 || $seq > 9) { // invalid sequences number
+			echo "ERROR,INVALID_SEQUENCES_NUMBER ".time()." $rawdata\n";
+			return -1;
+		}
+		else if ($seq > $num_seq) {
+			echo "ERROR,INVALID_SEQUENCE_NUMBER_OR_INVALID_NUMBER_OF_SEQUENCES ".time()." $rawdata\n";
+			return -1;
+		}
+		else { // sequencing ok, handle single/multi-part messaging
+			if ($seq == 1) { // always init to 0 at first sequence
+				$filler = 0; // ?
+				$itu = ""; // init message length
+				$pseq = 0; // note previous sequence number
+				$cmsg_sid = $msg_sid; // note msg_sid
+			}
+			if ($num_seq > 1) { // for multipart messages
+				if ($cmsg_sid != $msg_sid // different msg_sid
+					|| $msg_sid == -1 // invalid initial msg_sid
+					|| ($seq - $pseq) != 1 // not insequence
+					) {  // invalid for multipart message
+					$msg_sid = -1;
+					$cmsg_sid = -1;
+					echo "ERROR,INVALID_MULTIPART_MESSAGE ".time()." $rawdata\n";
+					return -1;
+				}
+				else {
+					$pseq++;
+				}
+			}
+
+			$itu = $itu.$pcs[5]; // get itu message
+			$filler += (int)$pcs[6][0]; // get filler
+
+			if ($num_seq == 1 // valid single message
+				|| $num_seq == $pseq // valid multi-part message
+				) {
+				if ($num_seq != 1) { // test
+					//echo $rawdata;
+				}
+				return process_ais_itu($itu, strlen($itu), $filler /*, $ais_ch*/);
+			}
+		} // end process raw AIS string (checksum passed)
+	}
+	return -1;
+}
+
+// incoming data from serial or IP comms
+function process_ais_buf($ibuf) {
+	static $cbuf = "";
+	$cbuf = $cbuf.$ibuf;
+	$last_pos = 0;
+	while ( ($start = strpos($cbuf,"VDM",$last_pos)) !== FALSE) {
+	//while ( ($start = strpos($cbuf,"!AI",$last_pos)) !== FALSE) {
+		//DEBUG echo $cbuf;
+		if ( ($end = strpos($cbuf,"\r\n", $start)) !== FALSE) { //TBD need to trim?
+			$tst = substr($cbuf, $start - 3, ($end - $start + 3));
+			//DEBUG echo "[$start $end $tst]\n";
+			process_ais_raw( $tst );
+			$last_pos = $end + 1;
+		}
+		else break;
+	}
+	if ($last_pos > 0) $cbuf = substr($cbuf, $last_pos); // move...
+	if (strlen($cbuf) > 1024) $cbuf = ""; // prevent overflow simple mode...
+}
+
+if (1) { // Test Message
+	$buf = "!AIVDM,1,1,,A,15DAB600017IlR<0e2SVCC4008Rv,0*64\r\n";
+	process_ais_buf($buf);
+}
+
+if (0) { // Test With Large Array
+	$test2_a = array( "sdfdsf!AIVDM,1,1,,B,18JfEB0P007Lcq00gPAdv?v000Sa,0*21\r\n!AIVDM,1,1,,B,18Jjr@00017Kn",
+		"jh0gNRtaHH00@06,0*37\r\n!AI","VDM,1,1,,B,18JTd60P017Kh<D0g405cOv00L<c,0*",
+		"42\r\n",
+		"!AIVDM,2,1,8,A,55RiwV02>3bLS=HJ220t<D4r0<u84j222222221?=PD?55Pf0BTjCQhD,0*73\r\n",
+		"!AIVDM,2,2,8,A,3lQH888888",
+		"88880,2*6A\r",
+		"\n!AIVDM,2,1,9,A,569w5`02>0V090=V221@DpN0<PV222222222221EC8S@:5O`0B4jCQhD,0*11\r\n!AIVDM,2,2,9,A,3lQH88888888880,2*6B\r\n!AIVDO,1,1,",
+		",A,D05GdR1MdffpuTf9H0,4*7","E\r\n!AIVDM,1,1,,A,?","8KWpp0kCm2PD00,2*6C\r\n!AIVDM,1,1,,A,?8KWpp1Cf15PD00,2*3B\r\nUIIII"
+	);
+	foreach ($test2_a as $test2_1) process_ais_buf($test2_1);
+}
 
 
-/*
-Message ID 6 Identifier for Message 24; always 24
-Repeat indicator 2 Used by the repeater to indicate how many times a message has been
-repeated. 0 = default; 3 = do not repeat any more
-User ID 30 MMSI number
-Part number 2 Identifier for the message part number; always 0 for Part A
-Name 120 Name of the MMSI-registered vessel. Maximum 20 characters 6-bit
-ASCII, @@@@@@@@@@@@@@@@@@@@ = not
-available = default
-Number of bits 160 Occupies one-time period 
-*/
-echo '<hr/>';
-
-/*
-
-Encoding
-
+/* AIS Encoding
 */
 function mk_ais_lat( $lat ) {
 	//$lat = 1.2569;
@@ -214,7 +330,6 @@ function mk_ais_lon( $lon ) {
 	return $lond;
 }
 
-
 function char2bin($name, $max_len) {
 	$len = strlen($name);
 	if ($len > $max_len) $name = substr($name,0,$max_len);
@@ -241,19 +356,7 @@ function char2bin($name, $max_len) {
 	return $rv.$pad;
 }
 
-$enc = '';
-$enc .= str_pad(decbin(24), 6, '0', STR_PAD_LEFT);
-$enc .= str_pad(decbin(0), 2, '0', STR_PAD_LEFT);
-$enc .= str_pad(decbin(351759000), 30, '0', STR_PAD_LEFT);
-$enc .= str_pad(decbin(0), 2, '0', STR_PAD_LEFT);
-$enc .= char2bin('ASIAN JADE', 20);
-
-//echo $enc.'<br/>';
-//echo "id= " . bindec(substr($enc,0,6)) . "<br/>";
-//echo "mmsi= " . bindec(substr($enc,8,30)) . "<br/>";
-//echo "name= " . binchar($enc,40,120) . "<br/>";
-
-function make_itu($_enc, $_part=1,$_total=1,$_seq='',$_ch='A') {
+function mk_ais($_enc, $_part=1,$_total=1,$_seq='',$_ch='A') {
 	$len_bit = strlen($_enc);
 	$rem6 = $len_bit % 6;
 	$pad6_len = 0;
@@ -296,4 +399,18 @@ function make_itu($_enc, $_part=1,$_total=1,$_seq='',$_ch='A') {
 	return $itu;
 }
 
-echo make_itu($enc).'<br/>';
+if (0) { // An Example Of Generating Message 24
+$enc = '';
+$enc .= str_pad(decbin(24), 6, '0', STR_PAD_LEFT);
+$enc .= str_pad(decbin(0), 2, '0', STR_PAD_LEFT);
+$enc .= str_pad(decbin(351759000), 30, '0', STR_PAD_LEFT);
+$enc .= str_pad(decbin(0), 2, '0', STR_PAD_LEFT);
+$enc .= char2bin('ASIAN JADE', 20);
+//echo $enc.'<br/>';
+//echo "id= " . bindec(substr($enc,0,6)) . "<br/>";
+//echo "mmsi= " . bindec(substr($enc,8,30)) . "<br/>";
+//echo "name= " . binchar($enc,40,120) . "<br/>";
+echo mk_ais($enc).'<br/>';
+}
+
+?>
