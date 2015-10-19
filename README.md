@@ -7,10 +7,15 @@ PHP AIS Encoder Decoder v2.0b
 This is a working library for both encoding and decoding AIS sentences using PHP.
 
 ### ais.2.php (Version 2)
-+ Decoding: call function process_ais_buf(...), pass in an AIS data from a serial or IP source or a test AIS string
++ Decoding:
+  + Sample Demo File: ais.2.decode_sample.php
+    + call method process_ais_buf(...) and pass in AIS data from a serial or IP source or a test AIS string
+    + override method process_ais_itu(...) to process the data the way you want to handle it
 + Encoding: see the example in the file to form an AIS message, uses the function mk_ais(...)
-+ Usage: see sample file
- + ais.2.decode_sample.php
+  + Sample Demo File: ais.2.decode_sample.php
+    + form up the sentence, determine the Channel, Sequence, etc.
+    + call method mk_ais(...) to form the AIS packet
+    + send it out
 
 ### v1/decode.ais.php & v1/base.ais.php (Older version 1)
 
