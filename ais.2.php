@@ -114,7 +114,7 @@ class AIS {
 	function process_ais_itu($_itu, $_len, $_filler /*, $ais_ch*/) {
 		GLOBAL $port; // tcpip port...
 		static $debug_counter = 0;
-
+		
 		$aisdata168='';//six bit array of ascii characters
 
 		$ais_nmea_array = str_split($_itu); // convert to an array
@@ -127,56 +127,59 @@ class AIS {
 		}
 		//echo $aisdata168 . "<br/>";
 
-		$id = bindec(substr($aisdata168,0,6));
-		$mmsi = bindec(substr($aisdata168,8,30));
+		$ro = new stdClass(); // return object
 
-		$name = '';
-		$sog = -1.0;
-		$cog = 0.0;
-		$lon = 0.0;
-		$lat = 0.0;
-		$cls = 0; // AIS class undefined
+		$ro->cls = 0; // AIS class undefined, also indicate unparsed msg
+		$ro->name = '';
+		$ro->sog = -1.0;
+		$ro->cog = 0.0;
+		$ro->lon = 0.0;
+		$ro->lat = 0.0;
+		$ro->ts = time();
 
-		if ($id >= 1 && $id <= 3) {
-			$cog = bindec(substr($aisdata168,116,12))/10;
-			$sog = bindec(substr($aisdata168,50,10))/10;
-			$lon = $this->make_lonf(bindec(substr($aisdata168,61,28)));
-			$lat = $this->make_latf(bindec(substr($aisdata168,89,27)));
-			$cls = 1; // class A
+		$ro->id = bindec(substr($aisdata168,0,6));
+		$ro->mmsi = bindec(substr($aisdata168,8,30));
+
+		if ($ro->id >= 1 && $ro->id <= 3) {
+			$ro->cog = bindec(substr($aisdata168,116,12))/10;
+			$ro->sog = bindec(substr($aisdata168,50,10))/10;
+			$ro->lon = $this->make_lonf(bindec(substr($aisdata168,61,28)));
+			$ro->lat = $this->make_latf(bindec(substr($aisdata168,89,27)));
+			$ro->cls = 1; // class A
 		}
-		else if ($id == 5) {
-			$imo = bindec(substr($aisdata168,40,30));
-			$cs = $this->binchar($aisdata168,70,42);
-			$name = $this->binchar($aisdata168,112,120);
-			$cls = 1; // class A
+		else if ($ro->id == 5) {
+			//$imo = bindec(substr($aisdata168,40,30));
+			//$cs = $this->binchar($aisdata168,70,42);
+			$ro->name = $this->binchar($aisdata168,112,120);
+			$ro->cls = 1; // class A
 		}
-		else if ($id == 18) {
-			$cog = bindec(substr($aisdata168,112,12))/10;
-			$sog = bindec(substr($aisdata168,46,10))/10;
-			$lon = $this->make_lonf(bindec(substr($aisdata168,57,28)));
-			$lat = $this->make_latf(bindec(substr($aisdata168,85,27)));
-			$cls = 2; // class B
+		else if ($ro->id == 18) {
+			$ro->cog = bindec(substr($aisdata168,112,12))/10;
+			$ro->sog = bindec(substr($aisdata168,46,10))/10;
+			$ro->lon = $this->make_lonf(bindec(substr($aisdata168,57,28)));
+			$ro->lat = $this->make_latf(bindec(substr($aisdata168,85,27)));
+			$ro->cls = 2; // class B
 		}
-		else if ($id == 19) {
-			$cog = bindec(substr($aisdata168,112,12))/10;
-			$sog = bindec(substr($aisdata168,46,10))/10;
-			$lon = $this->make_lonf(bindec(substr($aisdata168,61,28)));
-			$lat = $this->make_latf(bindec(substr($aisdata168,89,27)));
-			$name = $this->binchar($aisdata168,143,120);
-			$cls = 2; // class B
+		else if ($ro->id == 19) {
+			$ro->cog = bindec(substr($aisdata168,112,12))/10;
+			$ro->sog = bindec(substr($aisdata168,46,10))/10;
+			$ro->lon = $this->make_lonf(bindec(substr($aisdata168,61,28)));
+			$ro->lat = $this->make_latf(bindec(substr($aisdata168,89,27)));
+			$ro->name = $this->binchar($aisdata168,143,120);
+			$ro->cls = 2; // class B
 		}
-		else if ($id == 24) {
+		else if ($ro->id == 24) {
 			$pn = bindec(substr($aisdata168,38,2));
 			if ($pn == 0) {
-				$name = $this->binchar($aisdata168,40,120);
+				$ro->name = $this->binchar($aisdata168,40,120);
 			}
-			$cls = 2; // class B
+			$ro->cls = 2; // class B
 		}
-		if ($mmsi > 0 && $mmsi<1000000000) {// valid mmsi only...
-			$utc = time();
-			echo "$mmsi, $name, $utc, $lon, $lat, $sog, $cog, $cls, $port<br>\n";
-		}
-		return $id;
+		//if ($ro->mmsi > 0 && $ro->mmsi<1000000000) {// valid mmsi only...
+		//	echo "$mmsi, $name, $utc, $lon, $lat, $sog, $cog, $cls, $port<br>\n";
+		//}
+		//var_dump($ro);
+		return $ro;
 	}
 
 	// char* - AIS \r terminated string
