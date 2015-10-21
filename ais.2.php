@@ -110,6 +110,7 @@ class AIS {
 		return $rv;
 	}
 
+	// This function is Overidable
 	// function for decoding the AIS Message ITU Payload
 	function process_ais_itu($_itu, $_len, $_filler /*, $ais_ch*/) {
 		GLOBAL $port; // tcpip port...
