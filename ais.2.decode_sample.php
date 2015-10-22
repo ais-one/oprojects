@@ -51,6 +51,7 @@ class MyAIS extends AIS {
 			}
 			$ro->cls = 2; // class B
 		}
+		var_dump($ro); // dump results here for demo purpose
 		return $ro;
 	}
 }
@@ -60,8 +61,7 @@ $ais = new MyAIS();
 // Test Single Message
 if (1) {
 	$buf = "!AIVDM,1,1,,A,15DAB600017IlR<0e2SVCC4008Rv,0*64\r\n";
-	$o = $ais->process_ais_buf($buf);
-	var_dump($o);
+	$ais->process_ais_buf($buf);
 }
 
 // Test With Large Array Of Messages - represent packets of incoming data from serial port or IP connection
@@ -76,8 +76,7 @@ if (0) {
 		",A,D05GdR1MdffpuTf9H0,4*7","E\r\n!AIVDM,1,1,,A,?","8KWpp0kCm2PD00,2*6C\r\n!AIVDM,1,1,,A,?8KWpp1Cf15PD00,2*3B\r\nUIIII"
 	);
 	foreach ($test2_a as $test2_1) {
-		$o = $ais->process_ais_buf($test2_1);
-		var_dump($o);
+		$ais->process_ais_buf($test2_1);
 	}
 }
 
