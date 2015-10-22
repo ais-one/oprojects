@@ -112,6 +112,9 @@ class AIS {
 
 	// This function is Overidable
 	// function for decoding the AIS Message ITU Payload
+	function decode_ais($_aisdata) {
+	}
+
 	function process_ais_itu($_itu, $_len, $_filler /*, $ais_ch*/) {
 		GLOBAL $port; // tcpip port...
 		static $debug_counter = 0;
@@ -127,60 +130,7 @@ class AIS {
 			$aisdata168 .=$bit6;
 		}
 		//echo $aisdata168 . "<br/>";
-
-		$ro = new stdClass(); // return object
-
-		$ro->cls = 0; // AIS class undefined, also indicate unparsed msg
-		$ro->name = '';
-		$ro->sog = -1.0;
-		$ro->cog = 0.0;
-		$ro->lon = 0.0;
-		$ro->lat = 0.0;
-		$ro->ts = time();
-
-		$ro->id = bindec(substr($aisdata168,0,6));
-		$ro->mmsi = bindec(substr($aisdata168,8,30));
-
-		if ($ro->id >= 1 && $ro->id <= 3) {
-			$ro->cog = bindec(substr($aisdata168,116,12))/10;
-			$ro->sog = bindec(substr($aisdata168,50,10))/10;
-			$ro->lon = $this->make_lonf(bindec(substr($aisdata168,61,28)));
-			$ro->lat = $this->make_latf(bindec(substr($aisdata168,89,27)));
-			$ro->cls = 1; // class A
-		}
-		else if ($ro->id == 5) {
-			//$imo = bindec(substr($aisdata168,40,30));
-			//$cs = $this->binchar($aisdata168,70,42);
-			$ro->name = $this->binchar($aisdata168,112,120);
-			$ro->cls = 1; // class A
-		}
-		else if ($ro->id == 18) {
-			$ro->cog = bindec(substr($aisdata168,112,12))/10;
-			$ro->sog = bindec(substr($aisdata168,46,10))/10;
-			$ro->lon = $this->make_lonf(bindec(substr($aisdata168,57,28)));
-			$ro->lat = $this->make_latf(bindec(substr($aisdata168,85,27)));
-			$ro->cls = 2; // class B
-		}
-		else if ($ro->id == 19) {
-			$ro->cog = bindec(substr($aisdata168,112,12))/10;
-			$ro->sog = bindec(substr($aisdata168,46,10))/10;
-			$ro->lon = $this->make_lonf(bindec(substr($aisdata168,61,28)));
-			$ro->lat = $this->make_latf(bindec(substr($aisdata168,89,27)));
-			$ro->name = $this->binchar($aisdata168,143,120);
-			$ro->cls = 2; // class B
-		}
-		else if ($ro->id == 24) {
-			$pn = bindec(substr($aisdata168,38,2));
-			if ($pn == 0) {
-				$ro->name = $this->binchar($aisdata168,40,120);
-			}
-			$ro->cls = 2; // class B
-		}
-		//if ($ro->mmsi > 0 && $ro->mmsi<1000000000) {// valid mmsi only...
-		//	echo "$mmsi, $name, $utc, $lon, $lat, $sog, $cog, $cls, $port<br>\n";
-		//}
-		//var_dump($ro);
-		return $ro;
+		$this->decode_ais($aisdata168);
 	}
 
 	// char* - AIS \r terminated string
