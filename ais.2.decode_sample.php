@@ -3,8 +3,7 @@
 include_once('ais.2.php');
 
 class MyAIS extends AIS {
-	// This function is Overridable
-	// This function is called by process_ais_itu(...) method
+	// This function is Overridable and is called by process_ais_itu(...) method
 	function decode_ais($_aisdata) {
 		$ro = new stdClass(); // return object
 		$ro->cls = 0; // AIS class undefined, also indicate unparsed msg
@@ -61,11 +60,14 @@ $ais = new MyAIS();
 // Test Single Message
 if (1) {
 	$buf = "!AIVDM,1,1,,A,15DAB600017IlR<0e2SVCC4008Rv,0*64\r\n";
+	// Important Note:
+	// After receiving input from incoming serial or TCP/IP, call the process_ais_buf(...) method and pass in
+	// the input from device for further processing.
 	$ais->process_ais_buf($buf);
 }
 
 // Test With Large Array Of Messages - represent packets of incoming data from serial port or IP connection
-if (0) {
+if (1) {
 	$test2_a = array( "sdfdsf!AIVDM,1,1,,B,18JfEB0P007Lcq00gPAdv?v000Sa,0*21\r\n!AIVDM,1,1,,B,18Jjr@00017Kn",
 		"jh0gNRtaHH00@06,0*37\r\n!AI","VDM,1,1,,B,18JTd60P017Kh<D0g405cOv00L<c,0*",
 		"42\r\n",
@@ -76,6 +78,9 @@ if (0) {
 		",A,D05GdR1MdffpuTf9H0,4*7","E\r\n!AIVDM,1,1,,A,?","8KWpp0kCm2PD00,2*6C\r\n!AIVDM,1,1,,A,?8KWpp1Cf15PD00,2*3B\r\nUIIII"
 	);
 	foreach ($test2_a as $test2_1) {
+		// Important Note:
+		// After receiving input from incoming serial or TCP/IP, call the process_ais_buf(...) method and pass in
+		// the input from device for further processing.
 		$ais->process_ais_buf($test2_1);
 	}
 }
