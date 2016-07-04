@@ -328,7 +328,7 @@ class AIS {
 
 		// add checksum
 		$chksum = 0;
-		$itu = "AIVDM,$_part,$_total,$_seq,$_ch,".$itu;
+		$itu = "AIVDM,$_part,$_total,$_seq,$_ch,".$itu.",0";
 
 		$len_itu = strlen($itu);
 		for ($i=0; $i<$len_itu; $i++) {
@@ -343,8 +343,7 @@ class AIS {
 		if ($msb >=0 && $msb <= 15 ) $msbc = $hex_arr[$msb];
 		else $msbc = '0';
 
-		$itu = '!'.$itu.',0'
-			."*{$msbc}{$lsbc}\r\n";
+		$itu = '!'.$itu."*{$msbc}{$lsbc}\r\n";
 		return $itu;
 	}
 }
