@@ -112,7 +112,7 @@ class AIS {
 
 	// This function is Overidable
 	// function for decoding the AIS Message ITU Payload
-	function decode_ais($_aisdata) {
+	function decode_ais($_aisdata, $_aux) {
 	}
 
 	function process_ais_itu($_itu, $_len, $_filler, $aux /*, $ais_ch*/) {
