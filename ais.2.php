@@ -115,7 +115,7 @@ class AIS {
 	function decode_ais($_aisdata) {
 	}
 
-	function process_ais_itu($_itu, $_len, $_filler /*, $ais_ch*/) {
+	function process_ais_itu($_itu, $_len, $_filler, $aux /*, $ais_ch*/) {
 		GLOBAL $port; // tcpip port...
 		static $debug_counter = 0;
 		
@@ -130,11 +130,12 @@ class AIS {
 			$aisdata168 .=$bit6;
 		}
 		//echo $aisdata168 . "<br/>";
-		$this->decode_ais($aisdata168);
+		$this->decode_ais($aisdata168, $aux);
 	}
 
 	// char* - AIS \r terminated string
-	function process_ais_raw($rawdata) { // return int
+	// TCP based streams which send messages in full can use this instead of calling process_ais_buf
+	function process_ais_raw($rawdata, $aux = '') { // return int
 		static $num_seq; // 1 to 9
 		static $seq; // 1 to 9
 		static $pseq; // previous seq
@@ -216,7 +217,7 @@ class AIS {
 					if ($num_seq != 1) { // test
 						//echo $rawdata;
 					}
-					return $this->process_ais_itu($itu, strlen($itu), $filler /*, $ais_ch*/);
+					return $this->process_ais_itu($itu, strlen($itu), $filler, $aux /*, $ais_ch*/);
 				}
 			} // end process raw AIS string (checksum passed)
 		}
@@ -234,7 +235,7 @@ class AIS {
 			if ( ($end = strpos($cbuf,"\r\n", $start)) !== FALSE) { //TBD need to trim?
 				$tst = substr($cbuf, $start - 3, ($end - $start + 3));
 				//DEBUG echo "[$start $end $tst]\n";
-				$this->process_ais_raw( $tst );
+				$this->process_ais_raw( $tst, "" );
 				$last_pos = $end + 1;
 			}
 			else break;
