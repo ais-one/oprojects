@@ -1,0 +1,10 @@
+body {
+  margin: 0;
+  padding: 2rem;
+}
+
+.sticky-th {
+  background: white;
+  position: sticky;
+  top: 0;
+}

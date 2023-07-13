@@ -1,0 +1,127 @@
+{
+    "version": "4.4.0",
+    "objects": [
+      {
+        "type": "path",
+        "version": "4.4.0",
+        "originX": "center",
+        "originY": "center",
+        "left1": 38.5,
+        "top2": 72,
+        "width3": 53,
+        "height4": 88,
+        "fill": "rgba(255, 255, 255, 0.0)",
+        "stroke": "#0000FF",
+        "strokeWidth": 3,
+        "strokeDashArray": null,
+        "strokeLineCap": "butt",
+        "strokeDashOffset": 0,
+        "strokeLineJoin": "miter",
+        "strokeUniform": false,
+        "strokeMiterLimit": 4,
+        "scaleX": 1,
+        "scaleY": 1,
+        "angle": 0,
+        "flipX": false,
+        "flipY": false,
+        "opacity": 1,
+        "shadow": null,
+        "visible": true,
+        "backgroundColor": "",
+        "fillRule": "nonzero",
+        "paintFirst": "fill",
+        "globalCompositeOperation": "source-over",
+        "skewX": 0,
+        "skewY": 0,
+        "path": [
+          [
+            "M",
+            12,
+            116
+          ],
+          [
+            "L",
+            44,
+            28
+          ],
+          [
+            "L",
+            65,
+            84
+          ],
+          [
+            "z"
+          ]
+        ]
+      },
+      {
+        "type": "path",
+        "version": "4.4.0",
+        "originX": "center",
+        "originY": "center",
+        "left1": 123.5,
+        "top2": 71,
+        "width3": 63,
+        "height4": 90,
+        "fill": "rgba(255, 255, 255, 0.0)",
+        "stroke": "#0000FF",
+        "strokeWidth": 3,
+        "strokeDashArray": null,
+        "strokeLineCap": "butt",
+        "strokeDashOffset": 0,
+        "strokeLineJoin": "miter",
+        "strokeUniform": false,
+        "strokeMiterLimit": 4,
+        "scaleX": 1,
+        "scaleY": 1,
+        "angle": 0,
+        "flipX": false,
+        "flipY": false,
+        "opacity": 1,
+        "shadow": null,
+        "visible": true,
+        "backgroundColor": "",
+        "fillRule": "nonzero",
+        "paintFirst": "fill",
+        "globalCompositeOperation": "source-over",
+        "skewX": 0,
+        "skewY": 0,
+        "path": [
+          [
+            "M",
+            92,
+            96
+          ],
+          [
+            "L",
+            102,
+            26
+          ],
+          [
+            "L",
+            138,
+            30
+          ],
+          [
+            "L",
+            155,
+            62
+          ],
+          [
+            "L",
+            145,
+            102
+          ],
+          [
+            "L",
+            114,
+            116
+          ],
+          [
+            "z"
+          ]
+        ]
+      }
+    ],
+    "background": "#eee"
+  }

@@ -1,0 +1,35 @@
+[
+    {
+        "coordinates": [
+            [ "M", 50, 50 ],
+            [ "L", 100, 50 ],
+            [ "L", 100, 100 ],
+            [ "L", 50, 100 ],
+            [ "z" ]
+        ],
+        "colour": "#ff0000",
+        "id": "reef_structure_live_coral_plating"
+    },
+    {
+        "coordinates": [
+            [ "M", 70, 70 ],
+            [ "L", 80, 70 ],
+            [ "L", 80, 80 ],
+            [ "L", 70, 80 ],
+            [ "z" ]
+        ],
+        "colour": "#00ff00",
+        "id": "reef_structure_live_coral_plating"
+    },
+    {
+        "coordinates": [
+            [ "M", 90, 70 ],
+            [ "L", 110, 70 ],
+            [ "L", 110, 80 ],
+            [ "L", 90, 80 ],
+            [ "z" ]
+        ],
+        "colour": "#0000ff",
+        "id": "reef_structure_live_coral_plating"
+    }
+]
